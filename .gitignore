@@ -1,0 +1,13 @@
+# Airflow logs
+logs/
+
+# Environment variables (contains passwords)
+.env
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db

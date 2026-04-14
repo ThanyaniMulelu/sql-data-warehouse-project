@@ -1,0 +1,7 @@
+databases:
+  - database_name: DataWarehouse
+    sqlalchemy_uri: mssql+pymssql://sa:YourStrong!Passw0rd123@mssql:1433/DataWarehouse
+    extra: |
+      {
+        "allows_virtual_table_explore": true
+      }
