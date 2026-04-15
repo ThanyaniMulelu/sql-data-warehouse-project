@@ -76,9 +76,9 @@ A fully containerised SQL Server data warehouse built using the **Medallion Arch
 
 | Table | Rows |
 |-------|-----:|
-| `gold.dim_customers` | 18 484 |
-| `gold.dim_products` | 295 |
-| `gold.fact_sales` | 60 398 |
+| `gold.dim_customers` | 150 000 |
+| `gold.dim_products` | 723 |
+| `gold.fact_sales` | 1 002 701 |
 
 ---
 
@@ -92,6 +92,17 @@ A fully containerised SQL Server data warehouse built using the **Medallion Arch
 | ERP | `CUST_AZ12.csv` | Customer demographics (birthdate, gender) |
 | ERP | `LOC_A101.csv` | Customer-to-country mapping |
 | ERP | `PX_CAT_G1V2.csv` | Product categories and subcategories |
+
+### Data Volume
+
+| File | Rows | Size |
+|------|-----:|-----:|
+| `cust_info.csv` | 154 505 | 7 MB |
+| `prd_info.csv` | 1 080 | 70 KB |
+| `sales_details.csv` | 1 000 000 | 59 MB |
+| `CUST_AZ12.csv` | 150 000 | 4 MB |
+| `LOC_A101.csv` | 150 000 | 2.6 MB |
+| `PX_CAT_G1V2.csv` | 37 | < 1 KB |
 
 ![Data Integration](docs/data_integration.png)
 
@@ -170,6 +181,7 @@ sql-data-warehouse-project/
 | **Date conversion** | Integer `YYYYMMDD` → proper `DATE` type |
 | **Country code mapping** | `DE`/`US`/`AU`/etc. → full country names |
 | **Data validation** | Future birthdates set to `NULL`, sales recalculated where inconsistent |
+| **Sales correction** | Two-pass subquery: derive price first, then recalculate sales from corrected price. Rows where both `sales` and `price` are irrecoverable (NULL/negative) are excluded |
 | **ID cleanup** | `NAS` prefix stripped from ERP customer IDs |
 
 ---
@@ -191,7 +203,7 @@ Automated checks run as part of the daily ETL pipeline. Any failure stops the pi
 
 - **Docker Desktop** (Windows/Mac) or Docker Engine (Linux)
 - **Git** (to clone the repo)
-- ~4 GB free RAM for the containers
+- ~4 GB free RAM for the containers (SQL Server alone requires 2 GB)
 
 ### Quick Start
 
@@ -207,7 +219,7 @@ docker compose up -d --build
 docker compose ps
 ```
 
-This spins up **5 containers**:
+This spins up **6 containers**:
 
 | Service | Port | Purpose |
 |---------|------|---------|
@@ -215,6 +227,7 @@ This spins up **5 containers**:
 | **postgres** | internal | Airflow metadata database |
 | **airflow-webserver** | `localhost:8080` | Airflow UI |
 | **airflow-scheduler** | internal | DAG executor |
+| **airflow-init** | — | One-shot DB migration + admin user creation |
 | **superset** | `localhost:8088` | BI dashboards |
 
 ### Initialise the Warehouse

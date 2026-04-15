@@ -143,18 +143,29 @@ BEGIN
 				WHEN sls_due_dt = 0 OR LEN(sls_due_dt) != 8 THEN NULL
 				ELSE CAST(CAST(sls_due_dt AS VARCHAR) AS DATE)
 			END AS sls_due_dt,
+			-- Recalculate sales from the corrected price (two-pass: price first, then sales)
 			CASE 
-				WHEN sls_sales IS NULL OR sls_sales <= 0 OR sls_sales != sls_quantity * ABS(sls_price) 
-					THEN sls_quantity * ABS(sls_price)
+				WHEN derived_price IS NOT NULL AND derived_price > 0
+					AND (sls_sales IS NULL OR sls_sales <= 0 OR sls_sales != sls_quantity * derived_price)
+					THEN sls_quantity * derived_price
 				ELSE sls_sales
-			END AS sls_sales, -- Recalculate sales if original value is missing or incorrect
+			END AS sls_sales,
 			sls_quantity,
-			CASE 
-				WHEN sls_price IS NULL OR sls_price <= 0 
-					THEN sls_sales / NULLIF(sls_quantity, 0)
-				ELSE sls_price  -- Derive price if original value is invalid
-			END AS sls_price
-		FROM bronze.crm_sales_details;
+			derived_price AS sls_price
+		FROM (
+			SELECT
+				sls_ord_num, sls_prd_key, sls_cust_id,
+				sls_order_dt, sls_ship_dt, sls_due_dt,
+				sls_sales, sls_quantity,
+				-- First pass: correct the price
+				CASE 
+					WHEN sls_price IS NULL OR sls_price <= 0 
+						THEN ABS(sls_sales) / NULLIF(sls_quantity, 0)
+					ELSE ABS(sls_price)
+				END AS derived_price
+			FROM bronze.crm_sales_details
+			WHERE NOT ((sls_sales IS NULL OR sls_sales <= 0) AND (sls_price IS NULL OR sls_price <= 0)) -- Exclude irrecoverable rows
+		) t;
         SET @end_time = GETDATE();
         PRINT '>> Load Duration: ' + CAST(DATEDIFF(SECOND, @start_time, @end_time) AS NVARCHAR) + ' seconds';
         PRINT '>> -------------';
