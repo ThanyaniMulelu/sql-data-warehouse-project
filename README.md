@@ -162,7 +162,8 @@ sql-data-warehouse-project/
 ├── logs/                            # Airflow logs (git-ignored)
 ├── docker-compose.yml               # Full stack definition
 ├── Dockerfile                       # Custom Airflow image
-├── .env                             # Environment variables
+├── .env.example                     # Environment variable template (copy to .env)
+├── .env                             # Environment variables (git-ignored)
 ├── .gitignore
 ├── start.sh                         # Convenience start script (Linux/WSL)
 └── README.md
@@ -212,12 +213,20 @@ Automated checks run as part of the daily ETL pipeline. Any failure stops the pi
 git clone https://github.com/ThanyaniMulelu/sql-data-warehouse-project.git
 cd sql-data-warehouse-project
 
-# 2. Start all services
+# 2. Create the environment file
+cp .env.example .env          # Linux / macOS / WSL
+# Copy-Item .env.example .env  # Windows PowerShell
+
+# 3. Start all services
 docker compose up -d --build
 
-# 3. Wait for services to be healthy (~60 seconds)
+# 4. Wait for services to be healthy (~60 seconds)
 docker compose ps
 ```
+
+> **Note:** The `.env` file contains passwords for SQL Server, Airflow, and Superset.
+> The defaults in `.env.example` are fine for local development. For anything
+> shared or public, change the passwords before starting the stack.
 
 This spins up **6 containers**:
 
